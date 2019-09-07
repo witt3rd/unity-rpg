@@ -6,31 +6,30 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     public LayerMask movementMask;
-    
-    private Camera cam;
 
-    private PlayerMotor motor;
-    
+    private Camera _cam;
+
+    private PlayerMotor _motor;
+
     // Start is called before the first frame update
     void Start()
     {
-    cam = Camera.main;
-    motor = GetComponent<PlayerMotor>();
+        _cam = Camera.main;
+        _motor = GetComponent<PlayerMotor>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        var ray = cam.ScreenPointToRay(Input.mousePosition);
+        var ray = _cam.ScreenPointToRay(Input.mousePosition);
 
         // Move on left click
         if (Input.GetMouseButtonDown(0))
         {
             if (Physics.Raycast(ray, out var hit, 100, movementMask))
             {
-                motor.MoveToPoint(hit.point);
-
-                // Defocus
+                _motor.MoveToPoint(hit.point);
+                RemoveFocus();
             }
         }
 
@@ -39,8 +38,35 @@ public class PlayerController : MonoBehaviour
         {
             if (Physics.Raycast(ray, out var hit, 100))
             {
-                // Interactable?
+                var obj = hit.collider.GetComponent<Interactable>();
+                if (obj != null)
+                {
+                    SetFocus(obj);
+                }
             }
         }
+    }
+
+    public Interactable focus;
+
+    private void SetFocus(Interactable newFocus)
+    {
+        if (newFocus != focus)
+        {
+            if (focus != null)
+                focus.OnDefocused();
+            focus = newFocus;
+            _motor.FollowTarget(focus);
+        }
+
+        focus.OnFocused(transform);
+    }
+
+    private void RemoveFocus()
+    {
+        if (focus != null)
+            focus.OnDefocused();
+        focus = null;
+        _motor.StopFollowingTarget();
     }
 }
